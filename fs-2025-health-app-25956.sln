@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35707.178
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthApp.Domain", "HealthApp.Domain\HealthApp.Domain.csproj", "{10208FB2-0CD9-4A6E-810A-79C0D24F1AEE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthApp.Razor", "HealthApp.Razor\HealthApp.Razor.csproj", "{364B1309-7E55-4CD3-A43A-C945A58E8375}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthApp.API", "HealthApp.API\HealthApp.API.csproj", "{66A0A2C4-AAEB-48BD-8CD5-90ABB62CAEAC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthApp.Tests", "HealthApp.Tests\HealthApp.Tests.csproj", "{02AA37E9-CD28-442D-9414-FD26BB49DC53}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{10208FB2-0CD9-4A6E-810A-79C0D24F1AEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10208FB2-0CD9-4A6E-810A-79C0D24F1AEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10208FB2-0CD9-4A6E-810A-79C0D24F1AEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10208FB2-0CD9-4A6E-810A-79C0D24F1AEE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{364B1309-7E55-4CD3-A43A-C945A58E8375}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{364B1309-7E55-4CD3-A43A-C945A58E8375}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{364B1309-7E55-4CD3-A43A-C945A58E8375}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{364B1309-7E55-4CD3-A43A-C945A58E8375}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66A0A2C4-AAEB-48BD-8CD5-90ABB62CAEAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66A0A2C4-AAEB-48BD-8CD5-90ABB62CAEAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66A0A2C4-AAEB-48BD-8CD5-90ABB62CAEAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66A0A2C4-AAEB-48BD-8CD5-90ABB62CAEAC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02AA37E9-CD28-442D-9414-FD26BB49DC53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02AA37E9-CD28-442D-9414-FD26BB49DC53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02AA37E9-CD28-442D-9414-FD26BB49DC53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02AA37E9-CD28-442D-9414-FD26BB49DC53}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
