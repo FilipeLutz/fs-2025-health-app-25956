@@ -1,7 +1,6 @@
-using HealthApp.Domain.Entities;
+using HealthApp.Razor.Data;
 using HealthApp.Domain.Interfaces;
 using HealthApp.Domain.Services;
-using HealthApp.Razor.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,12 +10,12 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddDbContext<HealthApp.Domain.Services.ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Identity Configuration
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddEntityFrameworkStores<HealthApp.Domain.Services.ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
 // JWT Authentication
