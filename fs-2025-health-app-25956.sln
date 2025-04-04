@@ -6,10 +6,17 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthApp.Domain", "HealthApp.Domain\HealthApp.Domain.csproj", "{10208FB2-0CD9-4A6E-810A-79C0D24F1AEE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthApp.Razor", "HealthApp.Razor\HealthApp.Razor.csproj", "{364B1309-7E55-4CD3-A43A-C945A58E8375}"
+	ProjectSection(ProjectDependencies) = postProject
+		{10208FB2-0CD9-4A6E-810A-79C0D24F1AEE} = {10208FB2-0CD9-4A6E-810A-79C0D24F1AEE}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthApp.API", "HealthApp.API\HealthApp.API.csproj", "{66A0A2C4-AAEB-48BD-8CD5-90ABB62CAEAC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthApp.Tests", "HealthApp.Tests\HealthApp.Tests.csproj", "{02AA37E9-CD28-442D-9414-FD26BB49DC53}"
+	ProjectSection(ProjectDependencies) = postProject
+		{10208FB2-0CD9-4A6E-810A-79C0D24F1AEE} = {10208FB2-0CD9-4A6E-810A-79C0D24F1AEE}
+		{66A0A2C4-AAEB-48BD-8CD5-90ABB62CAEAC} = {66A0A2C4-AAEB-48BD-8CD5-90ABB62CAEAC}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,5 +43,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C1E9CD27-2CE6-41D9-BFCF-F0D8919F61C8}
 	EndGlobalSection
 EndGlobal
