@@ -14,11 +14,11 @@ namespace HealthApp.Domain.Services
         {
         }
 
-        public DbSet<Patient> Patients => Set<Patient>();
-        public DbSet<Doctor> Doctors => Set<Doctor>();
-        public DbSet<Appointment> Appointments => Set<Appointment>();
-        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Patient> Patients { get; set; }
+        public DbSet<Doctor> Doctors { get; set; }
+        public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Schedule> Schedules { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         public DbSet<Prescription> Prescriptions { get; set; }
         public DbSet<DoctorPatient> DoctorPatients { get; set; }
 
@@ -26,24 +26,20 @@ namespace HealthApp.Domain.Services
         {
             base.OnModelCreating(builder);
 
-            // Configure relationships and constraints
-            builder.Entity<Appointment>()
-                .HasOne(a => a.Patient)
-                .WithMany(p => p.Appointments)
-                .HasForeignKey(a => a.PatientId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             builder.Entity<Appointment>()
                 .HasOne(a => a.Doctor)
                 .WithMany(d => d.Appointments)
-                .HasForeignKey(a => a.DoctorId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasForeignKey(a => a.DoctorId);
+
+            builder.Entity<Appointment>()
+                .HasOne(a => a.Patient)
+                .WithMany(p => p.Appointments)
+                .HasForeignKey(a => a.PatientId);
 
             builder.Entity<Schedule>()
                 .HasOne(s => s.Doctor)
                 .WithMany(d => d.Schedules)
-                .HasForeignKey(s => s.DoctorId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(s => s.DoctorId);
 
             builder.Entity<Prescription>()
                 .HasOne(p => p.Appointment)
@@ -51,7 +47,6 @@ namespace HealthApp.Domain.Services
                 .HasForeignKey<Prescription>(p => p.AppointmentId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Add indexes for performance
             builder.Entity<Appointment>()
                 .HasIndex(a => a.AppointmentDateTime);
 
@@ -59,7 +54,12 @@ namespace HealthApp.Domain.Services
                 .HasIndex(a => a.Status);
 
             builder.Entity<Doctor>()
-                .HasIndex(d => d.Specialization);
+                .HasIndex(d => d.UserId)
+                .IsUnique();
+
+            builder.Entity<Patient>()
+                .HasIndex(p => p.UserId)
+                .IsUnique();
 
             builder.Entity<DoctorPatient>()
         .HasKey(dp => new { dp.DoctorId, dp.PatientId });
