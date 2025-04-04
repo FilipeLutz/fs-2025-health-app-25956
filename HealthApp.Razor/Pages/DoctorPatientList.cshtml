@@ -1,0 +1,42 @@
+﻿@page
+@model HealthApp.Razor.Pages.DoctorPatientListModel
+
+@{
+    ViewData["Title"] = "DoctorPatientList";
+}
+
+<h1>DoctorPatientList</h1>
+
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+               Doctor
+            </th>
+            <th>
+              Patient
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.DoctorPatients) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Doctor.Email)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Patient.Email)
+            </td>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |
+                @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) |
+                @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ })
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
