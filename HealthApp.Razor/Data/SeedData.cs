@@ -1,5 +1,6 @@
 ﻿using Bogus;
 using HealthApp.Domain.Entities;
+using HealthApp.Domain.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -23,23 +24,17 @@ public static class SeedData
             var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-            // Apply pending migrations first
             await context.Database.MigrateAsync();
             logger.LogInformation("Database migrations applied");
 
-            // 1. Seed roles first
             await SeedRoles(roleManager);
 
-            // 2. Seed admin user
             var adminUser = await SeedAdminUser(userManager, context);
 
-            // 3. Seed doctors (with their roles)
             await SeedDoctors(userManager, context);
 
-            // 4. Seed patients (with their roles)
             await SeedPatients(userManager, context, adminUser.Id, logger);
 
-            // 5. Seed appointments last
             await SeedAppointments(context, logger);
 
             logger.LogInformation("Database seeding completed successfully");
@@ -80,7 +75,7 @@ public static class SeedData
             await userManager.CreateAsync(adminUser, "Admin123!");
             await userManager.AddToRoleAsync(adminUser, "Admin");
 
-            context.Patients.Add(new Patient
+            context.Set<Patient>().Add(new Patient
             {
                 UserId = adminUser.Id,
                 Name = "Admin User",
@@ -97,7 +92,7 @@ public static class SeedData
 
     private static async Task SeedDoctors(UserManager<IdentityUser> userManager, ApplicationDbContext context)
     {
-        if (await context.Doctors.AnyAsync()) return;
+        if (await context.Set<Doctor>().AnyAsync()) return;
 
         var specialties = new[] { "Cardiology", "Neurology", "Pediatrics", "Orthopedics", "Dermatology" };
 
@@ -125,21 +120,19 @@ public static class SeedData
             await userManager.AddToRoleAsync(doctorUser, "Doctor");
 
             doctor.UserId = doctorUser.Id;
-            context.Doctors.Add(doctor);
+            context.Set<Doctor>().Add(doctor);
         }
 
-        // Save doctors first to generate IDs
         await context.SaveChangesAsync();
 
-        // Now add schedules with valid doctor IDs
-        foreach (var doctor in context.Doctors)
+        foreach (var doctor in context.Set<Doctor>())
         {
-            for (int i = 0; i < 5; i++) // 5 days per week
+            for (int i = 0; i < 5; i++) 
             {
-                context.Schedules.Add(new Schedule
+                context.Set<Schedule>().Add(new Schedule
                 {
                     DoctorId = doctor.Id,
-                    DayOfWeek = (DayOfWeek)((i + 1) % 7), // Mon-Fri
+                    DayOfWeek = (DayOfWeek)((i + 1) % 7), 
                     StartTime = TimeSpan.FromHours(9),
                     EndTime = TimeSpan.FromHours(17),
                     MaxAppointments = 8
@@ -153,7 +146,7 @@ public static class SeedData
     private static async Task SeedPatients(UserManager<IdentityUser> userManager,
     ApplicationDbContext context, string adminUserId, ILogger<Program> logger)
     {
-        if (await context.Patients.AnyAsync(p => p.UserId != adminUserId))
+        if (await context.Set<Patient>().AnyAsync(p => p.UserId != adminUserId))
         {
             logger.LogInformation("Patients already seeded");
             return;
@@ -162,27 +155,26 @@ public static class SeedData
         var patientFaker = new Faker<Patient>()
             .RuleFor(p => p.Name, f => {
                 var name = f.Name.FullName();
-                while (name.Length > 100) // Ensure name fits in database column
+                while (name.Length > 100)
                     name = f.Name.FullName();
                 return name;
             })
             .RuleFor(p => p.DateOfBirth, f => f.Date.Between(DateTime.Now.AddYears(-80), DateTime.Now.AddYears(-18)))
             .RuleFor(p => p.PhoneNumber, f => {
                 var phone = f.Phone.PhoneNumber();
-                return phone.Length > 20 ? phone[..20] : phone; // Truncate if too long
+                return phone.Length > 20 ? phone[..20] : phone;
             })
             .RuleFor(p => p.Email, (f, p) => {
                 var email = $"{p.Name.Replace(" ", "").ToLower()}@patient.com";
-                return email.Length > 256 ? email[..256] : email; // Ensure email fits
+                return email.Length > 256 ? email[..256] : email; 
             });
 
-        var patients = patientFaker.Generate(10); // Start with small number for testing
+        var patients = patientFaker.Generate(10); 
 
         foreach (var patient in patients)
         {
             try
             {
-                // Ensure email is unique
                 if (await userManager.FindByEmailAsync(patient.Email) != null)
                 {
                     patient.Email = $"{patient.Name.Replace(" ", "")}{Guid.NewGuid().ToString()[..4]}@patient.com";
@@ -195,16 +187,14 @@ public static class SeedData
                     EmailConfirmed = true
                 };
 
-                // Create user with stronger password
                 var result = await userManager.CreateAsync(patientUser, "StrongPatient123!");
                 if (!result.Succeeded)
                 {
                     logger.LogError("Failed to create user {Email}: {Errors}",
                         patient.Email, string.Join(", ", result.Errors.Select(e => e.Description)));
-                    continue; // Skip to next patient instead of failing
+                    continue;
                 }
 
-                // Add to Patient role
                 result = await userManager.AddToRoleAsync(patientUser, "Patient");
                 if (!result.Succeeded)
                 {
@@ -213,9 +203,8 @@ public static class SeedData
                 }
 
                 patient.UserId = patientUser.Id;
-                context.Patients.Add(patient);
+                context.Set<Patient>().Add(patient);
 
-                // Save after each patient to isolate errors
                 await context.SaveChangesAsync();
                 logger.LogInformation("Created patient {Email}", patient.Email);
             }
@@ -228,15 +217,14 @@ public static class SeedData
 
     private static async Task SeedAppointments(ApplicationDbContext context, ILogger<Program> logger)
     {
-        if (await context.Appointments.AnyAsync())
+        if (await context.Set<Appointment>().AnyAsync())
         {
             logger.LogInformation("Appointments already seeded");
             return;
         }
 
-        // Verify we have doctors and patients
-        var doctors = await context.Doctors.ToListAsync();
-        var patients = await context.Patients.ToListAsync();
+        var doctors = await context.Set<Doctor>().ToListAsync();
+        var patients = await context.Set<Patient>().ToListAsync();
 
         if (doctors.Count == 0 || patients.Count == 0)
         {
@@ -245,7 +233,7 @@ public static class SeedData
         }
 
         var appointmentFaker = new Faker<Appointment>()
-            .RuleFor(a => a.PatientId, f => f.PickRandom(patients).Id)
+            .RuleFor(a => a.PatientId, (f, a) => f.PickRandom(patients).Id)
             .RuleFor(a => a.DoctorId, f => f.PickRandom(doctors).Id)
             .RuleFor(a => a.AppointmentDateTime, f => f.Date.Between(DateTime.Now.AddDays(-30), DateTime.Now.AddDays(30)))
             .RuleFor(a => a.EndDateTime, (f, a) => a.AppointmentDateTime.AddMinutes(30))
@@ -253,11 +241,10 @@ public static class SeedData
             .RuleFor(a => a.Reason, f => f.Lorem.Sentence())
             .RuleFor(a => a.Notes, f => f.Lorem.Paragraph());
 
-        // Generate in smaller batches
         for (int i = 0; i < 5; i++)
         {
             var appointments = appointmentFaker.Generate(20); // 20 appointments per batch
-            await context.Appointments.AddRangeAsync(appointments);
+            await context.Set<Appointment>().AddRangeAsync(appointments);
             await context.SaveChangesAsync();
             logger.LogInformation("Seeded batch of {Count} appointments", appointments.Count);
         }
