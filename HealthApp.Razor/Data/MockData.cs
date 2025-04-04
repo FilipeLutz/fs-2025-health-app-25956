@@ -6,7 +6,6 @@ namespace HealthApp.Razor.Data
 
     public static class MockData
     {
-
         public static List<Patient> Patients()
         {
             List<Patient> patients = new();
@@ -17,25 +16,13 @@ namespace HealthApp.Razor.Data
             {
                 patients.Add(new Patient
                 {
-                    Id = Guid.NewGuid().ToString(),
-                    FirstName = faker.Name.FirstName(),
-                    LastName = faker.Name.LastName(),
+                    Id = i + 1,
+                    Name = faker.Name.FirstName(),
                     Email = faker.Internet.Email().ToLower()
                 });
             }
 
             return patients;
-
-            //return new List<Patient>
-            //{
-            //    new Patient
-            //    {
-            //        Id = Guid.NewGuid().ToString(),
-            //        FirstName = "John",
-            //        LastName = "Doe",
-            //      //  DateOfBirth = new DateTime(1980, 1, 1)
-            //    }
-            //};
         }
     }
 }
