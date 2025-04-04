@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using HealthApp.Razor.Data;
 using Microsoft.AspNetCore.Authorization;
+using HealthApp.Domain.Services;
 
 namespace HealthApp.Razor.Pages
 {
@@ -24,7 +25,7 @@ namespace HealthApp.Razor.Pages
 
         public async Task OnGetAsync()
         {
-            DoctorPatients = await _context.DoctorPatients
+            DoctorPatients = await _context.Set<DoctorPatient>()
                 .Include(d => d.Doctor)
                 .Include(d => d.Patient).ToListAsync();
         }
