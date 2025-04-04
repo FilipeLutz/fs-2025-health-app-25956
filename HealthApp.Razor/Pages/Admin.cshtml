@@ -1,0 +1,30 @@
+﻿@page
+@model HealthApp.Razor.Pages.AdminModel
+@{
+}
+<h1>Admin</h1>
+<p> The code is @Model.UserId</p>
+<p>The user is @User.Identity.Name</p>
+<ul>
+    @foreach (var item in User.Claims)
+    {
+        <li>@item</li>
+    }
+</ul>
+<table class="table">
+    <thead>
+        <tr><th>Id</th><th>Name</th><th>Last Name</th><th>Email</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var patient in Model.Patients)
+        {
+
+            <tr>
+                <td>@patient.Id</td>
+                <td>@patient.FirstName</td>
+                <td>@patient.LastName</td>
+                <td>@patient.Email</td>
+            </tr>
+        }
+    </tbody>
+</table>
