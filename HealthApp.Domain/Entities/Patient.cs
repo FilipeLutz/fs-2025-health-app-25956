@@ -37,4 +37,9 @@ public class Patient
     public double Height { get; set; }
     public double Weight { get; set; }
     public string? Allergies { get; set; }
+
+    public static implicit operator Patient(Domain.Patient v)
+    {
+        throw new NotImplementedException();
+    }
 }
