@@ -1,12 +1,19 @@
-﻿namespace HealthApp.Domain
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace HealthApp.Domain
 {
     public class Patient
     {
-        public string Id { get; set; }
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-        public string Email { get; set; }
-        public object Name { get; internal set; }
-        public string UserId { get; internal set; }
+        [Key]
+        public int Id { get; set; }
+
+        [Required]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Name { get; set; } = string.Empty;
+
+        [Required]
+        public string UserId { get; set; } = string.Empty;
     }
 }
