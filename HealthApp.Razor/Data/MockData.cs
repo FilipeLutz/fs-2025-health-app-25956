@@ -1,5 +1,5 @@
 ﻿using Bogus;
-using HealthApp.Domain;
+using HealthApp.Domain.Entities;
 
 namespace HealthApp.Razor.Data
 {
@@ -17,6 +17,7 @@ namespace HealthApp.Razor.Data
                 patients.Add(new Patient
                 {
                     Id = i + 1,
+                    UserId = faker.Internet.UserName(),
                     Name = faker.Name.FirstName(),
                     Email = faker.Internet.Email().ToLower()
                 });
