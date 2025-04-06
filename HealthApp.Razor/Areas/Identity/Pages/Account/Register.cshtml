@@ -5,9 +5,9 @@
 }
 
 <div class="row">
-    <div class="col-md-6 offset-md-3">
+    <div class="col-md-6">
         <form asp-route-returnUrl="@Model.ReturnUrl" method="post">
-            <h2>Create a new account</h2>
+            <h4>Create a new account.</h4>
             <hr />
             <div asp-validation-summary="All" class="text-danger"></div>
 
@@ -38,7 +38,6 @@
             <div class="form-group">
                 <label asp-for="Input.UserType"></label>
                 <select asp-for="Input.UserType" class="form-control" id="userTypeSelect">
-                    <option value="">Select Role</option>
                     <option value="Patient">Patient</option>
                     <option value="Doctor">Doctor</option>
                 </select>
@@ -51,7 +50,7 @@
                 <span asp-validation-for="Input.Specialization" class="text-danger"></span>
             </div>
 
-            <button type="submit" class="btn btn-primary mt-3">Register</button>
+            <button type="submit" class="btn btn-primary">Register</button>
         </form>
     </div>
 </div>
@@ -62,6 +61,18 @@
         document.getElementById('userTypeSelect').addEventListener('change', function() {
             const specializationGroup = document.getElementById('specializationGroup');
             specializationGroup.style.display = this.value === 'Doctor' ? 'block' : 'none';
+            // Clear the field when hidden
+            if (this.value !== 'Doctor') {
+                document.getElementById('Input_Specialization').value = '';
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const userTypeSelect = document.getElementById('userTypeSelect');
+            if (userTypeSelect.value === 'Doctor') {
+                document.getElementById('specializationGroup').style.display = 'block';
+            }
         });
     </script>
 }
