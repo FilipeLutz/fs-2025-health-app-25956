@@ -32,14 +32,8 @@ public class Patient
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
     public ICollection<Prescription> MedicalRecords { get; set; } = new List<Prescription>();
 
-    // Additional patient-specific properties
     public string? BloodType { get; set; }
     public double Height { get; set; }
     public double Weight { get; set; }
     public string? Allergies { get; set; }
-
-    public static implicit operator Patient(Domain.Patient v)
-    {
-        throw new NotImplementedException();
-    }
 }
