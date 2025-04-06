@@ -46,7 +46,7 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
             public string Email { get; set; }
 
             [Required]
-            [StringLength(100, MinimumLength = 6)]
+            [StringLength(100, MinimumLength = 8)]
             [DataType(DataType.Password)]
             [Display(Name = "Password")]
             public string Password { get; set; }
@@ -61,13 +61,13 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
             public string UserType { get; set; }
 
             [Display(Name = "Specialization")]
-            public string Specialization { get; set; }
+            public string? Specialization { get; set; }
         }
 
         public async Task OnGetAsync(string returnUrl = null)
         {
             ReturnUrl = returnUrl;
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+            Input = new InputModel();
         }
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
@@ -82,16 +82,13 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
 
                 if (result.Succeeded)
                 {
-                    // Ensure role exists
                     if (!await _roleManager.RoleExistsAsync(Input.UserType))
                     {
                         await _roleManager.CreateAsync(new IdentityRole(Input.UserType));
                     }
 
-                    // Add user to role
                     await _userManager.AddToRoleAsync(user, Input.UserType);
 
-                    // Create profile based on user type
                     if (Input.UserType == "Patient")
                     {
                         _context.Set<Patient>().Add(new Patient
@@ -115,6 +112,18 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
 
                     await _context.SaveChangesAsync();
                     await _signInManager.SignInAsync(user, isPersistent: false);
+
+                    // Redirect to appropriate dashboard based on role
+                    if (Input.UserType == "Doctor")
+                    {
+                        return RedirectToPage("/Doctor"); // Redirect to Doctor Dashboard
+                    }
+                    else if (Input.UserType == "Patient")
+                    {
+                        return RedirectToPage("/Patient"); // Redirect to Patient Dashboard
+                    }
+
+                    // Default redirect if no specific role is found
                     return LocalRedirect(returnUrl);
                 }
 
