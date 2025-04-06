@@ -21,8 +21,4 @@
     <ProjectReference Include="..\HealthApp.Domain\HealthApp.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Areas\Identity\Data\" />
-  </ItemGroup>
-
 </Project>
