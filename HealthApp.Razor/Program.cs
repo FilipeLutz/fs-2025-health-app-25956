@@ -1,8 +1,21 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using HealthApp.Domain.Services;
+using HealthApp.Domain.Interfaces;
+using HealthApp.Domain.EventBus;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<IEventBus>(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    var logger = provider.GetRequiredService<ILogger<RabbitMQEventBus>>();
+    return new RabbitMQEventBus(config, logger);
+});
+
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IAppointmentRepository, AppointmentService>();
 
 try
 {
@@ -82,6 +95,14 @@ try
 
             context.Database.Migrate();
 
+            var adminEmail = "admin@healthapp.com";
+            var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+            if (existingAdmin != null)
+            {
+                var deleteResult = await userManager.DeleteAsync(existingAdmin);
+                Console.WriteLine($"Admin deleted: {deleteResult.Succeeded}");
+            }
+
             string[] roleNames = { "Admin", "Doctor", "Patient" };
             foreach (var roleName in roleNames)
             {
@@ -91,21 +112,28 @@ try
                 }
             }
 
-            var adminEmail = "admin@healthapp.com";
-            var adminUser = await userManager.FindByEmailAsync(adminEmail);
-            if (adminUser == null)
+            var newAdmin = new IdentityUser
             {
-                adminUser = new IdentityUser
-                {
-                    UserName = adminEmail,
-                    Email = adminEmail,
-                    EmailConfirmed = true
-                };
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true
+            };
 
-                var createResult = await userManager.CreateAsync(adminUser, "Admin@1234");
-                if (createResult.Succeeded)
+            var createResult = await userManager.CreateAsync(newAdmin, "Admin@1234");
+            if (createResult.Succeeded)
+            {
+                await userManager.AddToRoleAsync(newAdmin, "Admin");
+                Console.WriteLine("New admin created successfully!");
+
+                var passwordCheck = await userManager.CheckPasswordAsync(newAdmin, "Admin@1234");
+                Console.WriteLine($"Password verification: {passwordCheck}");
+            }
+            else
+            {
+                Console.WriteLine("Failed to create admin:");
+                foreach (var error in createResult.Errors)
                 {
-                    await userManager.AddToRoleAsync(adminUser, "Admin");
+                    Console.WriteLine($"- {error.Description}");
                 }
             }
         }
