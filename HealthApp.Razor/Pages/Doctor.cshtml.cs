@@ -1,9 +1,11 @@
 using HealthApp.Domain.Entities;
 using HealthApp.Domain.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace HealthApp.Razor.Pages;
 
+[Authorize(Roles = "Doctor")]
 public class DoctorModel : PageModel
 {
     private readonly IAppointmentRepository _appointmentService;
