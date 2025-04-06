@@ -16,6 +16,23 @@ public class AppointmentService : IAppointmentRepository
         _notificationService = notificationService;
     }
 
+    public async Task<Appointment> CreateAppointmentAsync(Appointment appointment)
+    {
+        // Validate no overlapping appointments
+        var exists = await _context.Appointments
+            .AnyAsync(a => a.DoctorId == appointment.DoctorId &&
+                          a.AppointmentDateTime == appointment.AppointmentDateTime);
+
+        if (exists) throw new Exception("Time slot already booked");
+
+        _context.Appointments.Add(appointment);
+        await _context.SaveChangesAsync();
+
+        await _notificationService.SendAppointmentConfirmationAsync(appointment);
+
+        return appointment;
+    }
+
     public async Task<Appointment> GetByIdAsync(int id)
     {
         return await _context.Appointments
@@ -123,25 +140,22 @@ public class AppointmentService : IAppointmentRepository
         return await _context.Appointments.CountAsync(a => a.Status == status);
     }
 
-    public async Task<bool> CancelAppointmentAsync(int appointmentId, string reason)
+    public async Task CancelAppointmentAsync(int id, string reason)
     {
-        var appointment = await GetByIdAsync(appointmentId);
-        if (appointment == null) return false;
+        var appointment = await _context.Appointments.FindAsync(id);
 
-        // Check if cancellation is within 48 hours
-        if (appointment.AppointmentDateTime.Subtract(DateTime.Now).TotalHours < 48)
-        {
-            return false;
-        }
+        if (appointment.AppointmentDateTime < DateTime.Now.AddHours(48))
+            throw new Exception("Cannot cancel within 48 hours");
 
-        appointment.IsCancelled = true;
         appointment.Status = "Cancelled";
-        appointment.CancellationDate = DateTime.UtcNow;
         appointment.CancellationReason = reason;
 
-        await UpdateAsync(appointment);
+        await _context.SaveChangesAsync();
         await _notificationService.SendAppointmentCancellationAsync(appointment);
+    }
 
-        return true;
+    Task<bool> IAppointmentRepository.CancelAppointmentAsync(int appointmentId, string reason)
+    {
+        throw new NotImplementedException();
     }
 }
