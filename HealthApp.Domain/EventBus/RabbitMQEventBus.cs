@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -12,16 +13,18 @@ public class RabbitMQEventBus : IEventBus, IDisposable
     private readonly string _exchangeName = "health_app_exchange";
     private readonly ILogger<RabbitMQEventBus> _logger;
 
-    public RabbitMQEventBus(string hostname, ILogger<RabbitMQEventBus> logger)
+    public RabbitMQEventBus(IConfiguration config, ILogger<RabbitMQEventBus> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+        var hostname = config["RabbitMQ:HostName"] ?? "localhost";
 
         try
         {
             var factory = new ConnectionFactory()
             {
                 HostName = hostname,
-                DispatchConsumersAsync = true // Enable async consumer support
+                DispatchConsumersAsync = true
             };
 
             _connection = factory.CreateConnection();
