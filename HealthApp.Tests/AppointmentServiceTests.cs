@@ -40,7 +40,7 @@ public class AppointmentServiceTests : IDisposable
             await _context.Doctors.AddRangeAsync(doctors);
 
             // Seed patients
-            await _context.Patients.AddRangeAsync((IEnumerable<Domain.Patient>)new List<Patient>
+            await _context.Patients.AddRangeAsync((IEnumerable<Patient>)new List<Patient>
         {
             CreateTestPatient(1, "Test Patient 1", "3"),
             CreateTestPatient(2, "Test Patient 2", "4")
