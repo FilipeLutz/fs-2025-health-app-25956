@@ -20,12 +20,19 @@ try
         options.Password.RequireLowercase = true;
         options.Password.RequireNonAlphanumeric = false;
         options.Password.RequireUppercase = true;
-        options.Password.RequiredLength = 6;
+        options.Password.RequiredLength = 8;
         options.User.RequireUniqueEmail = true;
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+        options.AddPolicy("DoctorOrAdmin", policy =>
+            policy.RequireRole("Doctor", "Admin"));
+    });
 
     builder.Services.AddRazorPages(options =>
     {
@@ -73,9 +80,9 @@ try
             var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-            await context.Database.MigrateAsync();
+            context.Database.Migrate();
 
-            string[] roleNames = { "Patient", "Doctor", "Admin" };
+            string[] roleNames = { "Admin", "Doctor", "Patient" };
             foreach (var roleName in roleNames)
             {
                 if (!await roleManager.RoleExistsAsync(roleName))
@@ -95,7 +102,7 @@ try
                     EmailConfirmed = true
                 };
 
-                var createResult = await userManager.CreateAsync(adminUser, "Admin@123");
+                var createResult = await userManager.CreateAsync(adminUser, "Admin@1234");
                 if (createResult.Succeeded)
                 {
                     await userManager.AddToRoleAsync(adminUser, "Admin");
