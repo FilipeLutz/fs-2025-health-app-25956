@@ -12,37 +12,25 @@ namespace HealthApp.Razor.Data;
 
 public static class SeedData
 {
-    public static async Task Initialize(IServiceProvider serviceProvider)
+    public static void Initialize(IServiceProvider serviceProvider)
     {
-        using var scope = serviceProvider.CreateScope();
-        var services = scope.ServiceProvider;
-        var logger = services.GetRequiredService<ILogger<Program>>();
+        var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
+        var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
-        try
+        // Seed 1000 patients
+        var patientFaker = new Faker<IdentityUser>()
+            .RuleFor(u => u.Email, (f, u) => f.Internet.Email(f.Name.FirstName(), f.Name.LastName()))
+            .RuleFor(u => u.UserName, (f, u) => u.Email);
+
+        var patients = patientFaker.Generate(1000);
+
+        foreach (var patient in patients)
         {
-            var context = services.GetRequiredService<ApplicationDbContext>();
-            var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
-            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-
-            await context.Database.MigrateAsync();
-            logger.LogInformation("Database migrations applied");
-
-            await SeedRoles(roleManager);
-
-            var adminUser = await SeedAdminUser(userManager, context);
-
-            await SeedDoctors(userManager, context);
-
-            await SeedPatients(userManager, context, adminUser.Id, logger);
-
-            await SeedAppointments(context, logger);
-
-            logger.LogInformation("Database seeding completed successfully");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "An error occurred while seeding the database");
-            throw;
+            var result = userManager.CreateAsync(patient, "Patient@123").Result;
+            if (result.Succeeded)
+            {
+                userManager.AddToRoleAsync(patient, "Patient").Wait();
+            }
         }
     }
 
