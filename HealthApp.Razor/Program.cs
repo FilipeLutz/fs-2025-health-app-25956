@@ -28,17 +28,19 @@ try
 
     builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     {
-        options.SignIn.RequireConfirmedAccount = false;
+        options.SignIn.RequireConfirmedAccount = true;
         options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = true;
         options.Password.RequiredLength = 8;
-        options.User.RequireUniqueEmail = true;
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+    builder.Services.ConfigureApplicationCookie(options =>
+    {
+        options.LoginPath = "/Identity/Account/Login";
+        options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    });
 
     builder.Services.AddAuthorization(options =>
     {
