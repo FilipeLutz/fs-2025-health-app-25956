@@ -44,13 +44,18 @@
                 <span asp-validation-for="Input.UserType" class="text-danger"></span>
             </div>
 
-            <div class="form-group" id="specializationGroup" style="display: none;">
-                <label asp-for="Input.Specialization"></label>
-                <input asp-for="Input.Specialization" class="form-control" />
-                <span asp-validation-for="Input.Specialization" class="text-danger"></span>
-            </div>
+            @if (!string.IsNullOrEmpty(Model.Input.UserType) && Model.Input.UserType == "Doctor")
+            {
+                <div class="form-group" id="specializationGroup">
+                    <label asp-for="Input.Specialization"></label>
+                    <input asp-for="Input.Specialization" class="form-control" />
+                    <span asp-validation-for="Input.Specialization" class="text-danger"></span>
+                </div>
+            }
 
-            <button type="submit" class="btn btn-primary">Register</button>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Register</button>
+            </div>
         </form>
     </div>
 </div>
@@ -61,13 +66,12 @@
         document.getElementById('userTypeSelect').addEventListener('change', function() {
             const specializationGroup = document.getElementById('specializationGroup');
             specializationGroup.style.display = this.value === 'Doctor' ? 'block' : 'none';
-            // Clear the field when hidden
+            
             if (this.value !== 'Doctor') {
                 document.getElementById('Input_Specialization').value = '';
             }
         });
 
-        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             const userTypeSelect = document.getElementById('userTypeSelect');
             if (userTypeSelect.value === 'Doctor') {
