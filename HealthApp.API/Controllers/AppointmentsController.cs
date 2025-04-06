@@ -39,6 +39,8 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
+
+
     [HttpGet("doctor/{doctorId}")]
     public async Task<ActionResult<IEnumerable<Appointment>>> GetByDoctor(int doctorId)
     {
