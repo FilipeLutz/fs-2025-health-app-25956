@@ -1,60 +1,30 @@
 ﻿@page
-@model AdminModel
+@model HealthApp.Razor.Pages.AdminModel
 @{
     ViewData["Title"] = "Admin Dashboard";
 }
 
 <h1>@ViewData["Title"]</h1>
 
-<div class="row">
-    <div class="col-md-6">
-        <h3>Create New User</h3>
-        <form method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="form-group">
-                <label asp-for="Input.Email"></label>
-                <input asp-for="Input.Email" class="form-control" />
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Input.Password"></label>
-                <input asp-for="Input.Password" class="form-control" />
-                <span asp-validation-for="Input.Password" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Input.FullName"></label>
-                <input asp-for="Input.FullName" class="form-control" />
-                <span asp-validation-for="Input.FullName" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Input.Role"></label>
-                <select asp-for="Input.Role" class="form-control" id="roleSelect">
-                    <option value="Patient">Patient</option>
-                    <option value="Doctor">Doctor</option>
-                    <option value="Admin">Admin</option>
-                </select>
-            </div>
-
-            <div class="form-group" id="specializationGroup" style="display: none;">
-                <label asp-for="Input.Specialization"></label>
-                <input asp-for="Input.Specialization" class="form-control" />
-            </div>
-
-            <button type="submit" class="btn btn-primary">Create User</button>
-        </form>
-    </div>
-</div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script>
-        document.getElementById('roleSelect').addEventListener('change', function() {
-            const specializationGroup = document.getElementById('specializationGroup');
-            specializationGroup.style.display = this.value === 'Doctor' ? 'block' : 'none';
-        });
-    </script>
-}
+<table class="table">
+    <thead>
+        <tr>
+            <th>User Name</th>
+            <th>Email</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.UserName</td>
+                <td>@user.Email</td>
+                <td>
+                    <a href="@Url.Page("EditUser", new { userId = user.Id })">Edit</a> |
+                    <a href="@Url.Page("DeleteUser", new { userId = user.Id })" onclick="return confirm('Are you sure?')">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
