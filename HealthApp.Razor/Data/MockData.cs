@@ -16,10 +16,17 @@ namespace HealthApp.Razor.Data
             {
                 patients.Add(new Patient
                 {
-                    Id = i + 1,
-                    UserId = faker.Internet.UserName(),
-                    Name = faker.Name.FirstName(),
-                    Email = faker.Internet.Email().ToLower()
+                    Id = i,
+                    FirstName = faker.Name.FirstName(),
+                    LastName = faker.Name.LastName(),
+                    Email = faker.Internet.Email(),
+                    Address = faker.Address.FullAddress(),
+                    DateOfBirth = faker.Date.Past(30, DateTime.Now),
+                    BloodType = faker.PickRandom(new[] { "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-" }),
+                    PhoneNumber = faker.Phone.PhoneNumber(),
+                    Appointments = new List<Appointment>(),
+                    InsuranceInfo = faker.Internet.UserName(),
+                    MedicalHistory = faker.Lorem.Paragraph(),
                 });
             }
 
