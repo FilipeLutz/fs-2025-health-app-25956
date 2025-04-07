@@ -123,7 +123,6 @@ public class RabbitMQEventBus : IEventBus, IDisposable
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error processing message from queue {QueueName}", queueName);
-                    // Consider implementing dead-letter queue for failed messages
                 }
             };
 
