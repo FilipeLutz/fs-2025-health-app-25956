@@ -72,12 +72,9 @@ public class AppointmentServiceTests : IDisposable
         return new Doctor
         {
             Id = id,
-            Name = name,
             UserId = userId,
             Specialization = specialization,
-            Email = $"{name.ToLower().Replace(" ", "")}@test.com",
             LicenseNumber = $"DOC{id}2345",
-            HospitalAffiliation = "Test Hospital"
         };
     }
 
@@ -86,14 +83,7 @@ public class AppointmentServiceTests : IDisposable
         return new Patient
         {
             Id = id,
-            Name = name,
             UserId = userId,
-            Email = $"{name.ToLower().Replace(" ", "")}@test.com",
-            PhoneNumber = $"111222{id:0000}",
-            Address = $"{id}23 Test St, Test City",
-            Allergies = id == 2 ? "Penicillin" : "None",
-            BloodType = id == 2 ? "A-" : "O+",
-            DateOfBirth = new DateTime(1980 + (id * 10), 1, 1)
         };
     }
 
