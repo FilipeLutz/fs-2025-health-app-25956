@@ -11,14 +11,14 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
     public class RegisterModel : PageModel
     {
         private readonly ApplicationDbContext _context;
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
 
         public RegisterModel(
             ApplicationDbContext context,
-            UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager,
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
             RoleManager<IdentityRole> roleManager)
         {
             _context = context;
@@ -77,7 +77,7 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                var user = new IdentityUser { UserName = Input.Email, Email = Input.Email };
+                var user = new ApplicationUser { UserName = Input.Email, Email = Input.Email };
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
                 if (result.Succeeded)
@@ -93,9 +93,7 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
                     {
                         _context.Set<Patient>().Add(new Patient
                         {
-                            UserId = user.Id,
-                            Name = Input.FullName,
-                            Email = Input.Email
+                            UserId = user.Id
                         });
                     }
                     else if (Input.UserType == "Doctor")
@@ -103,8 +101,6 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
                         _context.Set<Doctor>().Add(new Doctor
                         {
                             UserId = user.Id,
-                            Name = Input.FullName,
-                            Email = Input.Email,
                             Specialization = Input.Specialization,
                             LicenseNumber = "TEMP-" + Guid.NewGuid().ToString()[..8]
                         });
