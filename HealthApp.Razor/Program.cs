@@ -3,19 +3,28 @@ using Microsoft.EntityFrameworkCore;
 using HealthApp.Domain.Services;
 using HealthApp.Domain.Interfaces;
 using HealthApp.Domain.EventBus;
-using Microsoft.Extensions.DependencyInjection;
+using HealthApp.Domain.Entities;
+using HealthApp.Razor.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped<IEventBus>(provider =>
+builder.Services.AddSingleton<IEventBus>(provider =>
 {
     var config = provider.GetRequiredService<IConfiguration>();
     var logger = provider.GetRequiredService<ILogger<RabbitMQEventBus>>();
     return new RabbitMQEventBus(config, logger);
 });
 
-builder.Services.AddScoped<INotificationService, NotificationService>();
+// Email service
+builder.Services.AddTransient<IEmailService, EmailService>();
+
+// Register application services
 builder.Services.AddScoped<IAppointmentRepository, AppointmentService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IDoctorService, DoctorService>();
+builder.Services.AddScoped<IPatientService, PatientService>();
+builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 try
 {
@@ -26,15 +35,12 @@ try
         options.UseSqlServer(connectionString,
             sqlOptions => sqlOptions.EnableRetryOnFailure()));
 
-    builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+    builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     {
-        options.SignIn.RequireConfirmedAccount = true;
-        options.Password.RequireDigit = true;
-        options.Password.RequiredLength = 8;
+        options.SignIn.RequireConfirmedAccount = false;
     })
     .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+    .AddEntityFrameworkStores<ApplicationDbContext>();
 
     builder.Services.ConfigureApplicationCookie(options =>
     {
@@ -51,8 +57,9 @@ try
 
     builder.Services.AddRazorPages(options =>
     {
-        options.Conventions.AuthorizeFolder("/");
-        options.Conventions.AllowAnonymousToPage("/Index");
+        options.Conventions.AuthorizeFolder("/Admin", "Admin");
+        options.Conventions.AuthorizeFolder("/Doctor", "Doctor");
+        options.Conventions.AuthorizeFolder("/Patient", "Patient");
     });
 
     builder.Services.AddSession(options =>
@@ -74,79 +81,33 @@ try
         app.UseHsts();
     }
 
-    app.UseHttpsRedirection();
-    app.UseStaticFiles();
-
-    app.UseRouting();
-
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    app.UseSession();
-
-    app.MapRazorPages();
-
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
         try
         {
             var context = services.GetRequiredService<ApplicationDbContext>();
-            var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
             context.Database.Migrate();
-
-            var adminEmail = "admin@healthapp.com";
-            var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
-            if (existingAdmin != null)
-            {
-                var deleteResult = await userManager.DeleteAsync(existingAdmin);
-                Console.WriteLine($"Admin deleted: {deleteResult.Succeeded}");
-            }
-
-            string[] roleNames = { "Admin", "Doctor", "Patient" };
-            foreach (var roleName in roleNames)
-            {
-                if (!await roleManager.RoleExistsAsync(roleName))
-                {
-                    await roleManager.CreateAsync(new IdentityRole(roleName));
-                }
-            }
-
-            var newAdmin = new IdentityUser
-            {
-                UserName = adminEmail,
-                Email = adminEmail,
-                EmailConfirmed = true
-            };
-
-            var createResult = await userManager.CreateAsync(newAdmin, "Admin@1234");
-            if (createResult.Succeeded)
-            {
-                await userManager.AddToRoleAsync(newAdmin, "Admin");
-                Console.WriteLine("New admin created successfully!");
-
-                var passwordCheck = await userManager.CheckPasswordAsync(newAdmin, "Admin@1234");
-                Console.WriteLine($"Password verification: {passwordCheck}");
-            }
-            else
-            {
-                Console.WriteLine("Failed to create admin:");
-                foreach (var error in createResult.Errors)
-                {
-                    Console.WriteLine($"- {error.Description}");
-                }
-            }
+            await SeedData.Initialize(services);
         }
         catch (Exception ex)
         {
             var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "An error occurred while seeding the database.");
+            logger.LogError(ex, "An error occurred seeding the DB.");
         }
     }
 
+    app.UseHttpsRedirection();
+    app.UseStaticFiles();
+    app.UseRouting();
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapRazorPages();
     app.Run();
+
 }
 catch (Exception ex)
 {
