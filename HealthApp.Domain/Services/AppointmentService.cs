@@ -1,4 +1,5 @@
-﻿using HealthApp.Domain.Entities;
+﻿using HealthApp.Razor.Data;
+using HealthApp.Domain.Entities;
 using HealthApp.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,56 +16,14 @@ public class AppointmentService : IAppointmentRepository
         _notificationService = notificationService;
     }
 
-    public IQueryable<Appointment> GetPatientAppointments(string patientId)
+    public async Task<Appointment> CreateAppointmentAsync(Appointment appointment)
     {
-        return _context.Appointments
-            .Where(a => a.PatientId.ToString() == patientId)
-            .Include(a => a.Doctor)
-            .AsQueryable();
-    }
+        // Validate no overlapping appointments
+        var exists = await _context.Appointments
+            .AnyAsync(a => a.DoctorId == appointment.DoctorId &&
+                          a.AppointmentDateTime == appointment.AppointmentDateTime);
 
-    public IEnumerable<object> GetDoctorAppointments(int id)
-    {
-        return _context.Appointments
-            .Where(a => a.DoctorId == id)
-            .Include(a => a.Patient)
-            .Select(a => new
-            {
-                a.Id,
-                a.AppointmentDateTime,
-                a.Status,
-                PatientName = $"{a.Patient.FirstName} {a.Patient.LastName}"
-            })
-            .AsEnumerable();
-    }
-
-    public async Task<Appointment> CreateAppointmentAsync(AppointmentCreateDto dto)
-    {
-        var isAvailable = await _context.Schedules
-            .AnyAsync(s => s.DoctorId == dto.DoctorId &&
-                         s.DayOfWeek == dto.AppointmentDateTime.DayOfWeek &&
-                         s.StartTime <= dto.AppointmentDateTime.TimeOfDay &&
-                         s.EndTime >= dto.AppointmentDateTime.TimeOfDay);
-
-        if (!isAvailable)
-            throw new Exception("Doctor is not available at this time");
-
-        var conflict = await _context.Appointments
-            .AnyAsync(a => a.DoctorId == dto.DoctorId &&
-                          a.AppointmentDateTime == dto.AppointmentDateTime &&
-                          a.Status != "Cancelled");
-
-        if (conflict)
-            throw new Exception("Time slot already booked");
-
-        var appointment = new Appointment
-        {
-            DoctorId = dto.DoctorId,
-            PatientId = dto.PatientId,
-            AppointmentDateTime = dto.AppointmentDateTime,
-            Status = "Pending",
-            CancellationReason = dto.Reason
-        };
+        if (exists) throw new Exception("Time slot already booked");
 
         _context.Appointments.Add(appointment);
         await _context.SaveChangesAsync();
@@ -121,11 +80,12 @@ public class AppointmentService : IAppointmentRepository
 
     public async Task AddAsync(Appointment appointment)
     {
-        if (await IsTimeSlotAvailableAsync(appointment.DoctorId, appointment.AppointmentDateTime, appointment.AppointmentDateTime))
+        if (await IsTimeSlotAvailableAsync(appointment.DoctorId, appointment.AppointmentDateTime, appointment.EndDateTime))
         {
             _context.Appointments.Add(appointment);
             await _context.SaveChangesAsync();
 
+            // Send notification
             await _notificationService.SendAppointmentConfirmationAsync(appointment);
         }
         else
@@ -161,9 +121,9 @@ public class AppointmentService : IAppointmentRepository
             .Where(a => a.DoctorId == doctorId)
             .Where(a => a.Status != "Cancelled")
             .AnyAsync(a =>
-                (start >= a.AppointmentDateTime && start < a.AppointmentDateTime) ||
-                (end > a.AppointmentDateTime && end <= a.AppointmentDateTime) ||
-                (start <= a.AppointmentDateTime && end >= a.AppointmentDateTime));
+                (start >= a.AppointmentDateTime && start < a.EndDateTime) ||
+                (end > a.AppointmentDateTime && end <= a.EndDateTime) ||
+                (start <= a.AppointmentDateTime && end >= a.EndDateTime));
     }
 
     public async Task<IEnumerable<Appointment>> GetPendingAppointmentsAsync(int doctorId)
@@ -185,7 +145,7 @@ public class AppointmentService : IAppointmentRepository
         var appointment = await _context.Appointments.FindAsync(id);
 
         if (appointment.AppointmentDateTime < DateTime.Now.AddHours(48))
-            throw new Exception("Cannot cancel within 48 hours of appointment");
+            throw new Exception("Cannot cancel within 48 hours");
 
         appointment.Status = "Cancelled";
         appointment.CancellationReason = reason;
@@ -195,18 +155,6 @@ public class AppointmentService : IAppointmentRepository
     }
 
     Task<bool> IAppointmentRepository.CancelAppointmentAsync(int appointmentId, string reason)
-    {
-        throw new NotImplementedException();
-    }
-    public IQueryable<Appointment> GetAll()
-    {
-        return _context.Appointments
-            .Include(a => a.Patient)
-            .Include(a => a.Doctor)
-            .AsQueryable();
-    }
-
-    public Task<IEnumerable<Appointment>> GetRecentAsync(int count)
     {
         throw new NotImplementedException();
     }
