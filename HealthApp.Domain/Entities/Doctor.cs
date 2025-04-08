@@ -1,28 +1,32 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using HealthApp.Razor.Data;
+using System.ComponentModel.DataAnnotations;
 
 namespace HealthApp.Domain.Entities;
 
 public class Doctor
 {
+    [Key]
     public int Id { get; set; }
-    [Required]
-    [MaxLength(100)]
-    public string FirstName { get; set; }
-    [Required]
-    [MaxLength(100)]
-    public string LastName { get; set; }
-    public string FullName => $"{FirstName} {LastName}";
-    public string Email { get; set; }
-    public string PhoneNumber { get; set; }
-    public string Specialization { get; set; }
-    public string LicenseNumber { get; set; }
 
-    [ForeignKey("UserId")]
-    public string UserId { get; set; }
-    public ApplicationUser User { get; set; }
+    [Required]
+    public required string UserId { get; set; }
 
-    public ICollection<Schedule> Schedules { get; set; }
-    public ICollection<Appointment> Appointments { get; set; }
-    public ICollection<Prescription> Prescriptions { get; set; }
+    [Required, MaxLength(100)]
+    public required string Name { get; set; }
+
+    [MaxLength(100)]
+    public string? Specialization { get; set; }
+
+    [MaxLength(100)]
+    public required string Email { get; set; }
+
+    [MaxLength(500)]
+    public string? Bio { get; set; }
+
+    public ICollection<DoctorPatient>? DoctorPatients { get; set; }
+    public ICollection<Appointment>? Appointments { get; set; }
+    public ICollection<Schedule>? Schedules { get; set; }
+    public string? LicenseNumber { get; set; }
+    public int? YearsOfExperience { get; set; }
+    public string? HospitalAffiliation { get; set; }
 }
