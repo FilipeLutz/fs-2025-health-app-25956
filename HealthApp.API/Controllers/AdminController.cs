@@ -1,10 +1,9 @@
-﻿using HealthApp.Domain.Entities;
-using HealthApp.Domain.Interfaces;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using HealthApp.Domain.Entities;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace HealthApp.Razor.Areas.Admin.Controllers
 {
@@ -12,72 +11,87 @@ namespace HealthApp.Razor.Areas.Admin.Controllers
     [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IDoctorService _doctorService;
-        private readonly IAppointmentRepository _appointmentService;
 
-        public AdminController(
-            UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole> roleManager,
-            IDoctorService doctorService,
-            IAppointmentRepository appointmentService)
+        public AdminController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
             _roleManager = roleManager;
-            _doctorService = doctorService;
-            _appointmentService = appointmentService;
         }
 
-        public async Task<IActionResult> Dashboard()
+        public async Task<IActionResult> AdminDashboard()
         {
-            var model = new AdminDashboardViewModel
+            var users = _userManager.Users.ToList();
+            return View(users);
+        }
+
+        public async Task<IActionResult> EditUser(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var allRoles = _roleManager.Roles.ToList();
+
+            var model = new EditUserViewModel
             {
-                UserCount = await _userManager.Users.CountAsync(),
-                DoctorCount = await _doctorService.GetCountAsync(),
-                RecentAppointments = await _appointmentService.GetRecentAsync(10),
-                PendingApprovals = await _userManager.Users
-                    .Where(u => u.LockoutEnd.HasValue)
-                    .CountAsync()
+                UserId = user.Id,
+                Name = user.UserName,
+                Email = user.Email,
+                Roles = allRoles.Select(r => new RoleSelectionModel
+                {
+                    RoleName = r.Name,
+                    IsSelected = userRoles.Contains(r.Name)
+                }).ToList()
             };
 
             return View(model);
         }
 
-        public async Task<IActionResult> ManageUsers()
+        [HttpPost]
+        public async Task<IActionResult> EditUser(string userId, EditUserViewModel model)
         {
-            var users = await _userManager.Users.ToListAsync();
-            return View(users);
+            if (userId != model.UserId) return BadRequest();
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            user.UserName = model.Name;
+            user.Email = model.Email;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                foreach (var error in updateResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+                return View(model);
+            }
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            var rolesToRemove = currentRoles.Except(model.Roles.Where(r => r.IsSelected).Select(r => r.RoleName)).ToList();
+            var rolesToAdd = model.Roles.Where(r => r.IsSelected).Select(r => r.RoleName).Except(currentRoles).ToList();
+
+            await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+            await _userManager.AddToRolesAsync(user, rolesToAdd);
+
+            return RedirectToAction(nameof(AdminDashboard));
         }
 
-        public async Task<IActionResult> ManageDoctors()
+        public async Task<IActionResult> DeleteUser(string userId)
         {
-            var doctors = await _doctorService.GetAllDoctorsAsync();
-            return View(doctors);
-        }
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
 
-        public async Task<IActionResult> ManageAppointments()
-        {
-            var appointments = await _appointmentService.GetAllAsync();
-            return View(appointments);
-        }
+            var result = await _userManager.DeleteAsync(user);
+            if (result.Succeeded)
+            {
+                return RedirectToAction(nameof(AdminDashboard));
+            }
 
-        public async Task<IActionResult> Reports()
-        {
-            return View();
+            return View("Error");
         }
-
-        public async Task<IActionResult> SystemSettings()
-        {
-            return View();
-        }
-    }
-
-    public class AdminDashboardViewModel
-    {
-        public int UserCount { get; set; }
-        public int DoctorCount { get; set; }
-        public IEnumerable<Appointment> RecentAppointments { get; set; }
-        public int PendingApprovals { get; set; }
     }
 }
