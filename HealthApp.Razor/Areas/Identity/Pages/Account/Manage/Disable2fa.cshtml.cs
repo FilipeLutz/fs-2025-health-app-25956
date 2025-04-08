@@ -4,7 +4,6 @@
 
 using System;
 using System.Threading.Tasks;
-using HealthApp.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -14,11 +13,11 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account.Manage
 {
     public class Disable2faModel : PageModel
     {
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<Disable2faModel> _logger;
 
         public Disable2faModel(
-            UserManager<ApplicationUser> userManager,
+            UserManager<IdentityUser> userManager,
             ILogger<Disable2faModel> logger)
         {
             _userManager = userManager;
