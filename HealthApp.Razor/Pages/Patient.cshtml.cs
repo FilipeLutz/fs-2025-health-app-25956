@@ -10,7 +10,7 @@ using System.ComponentModel.DataAnnotations;
 namespace HealthApp.Razor.Pages;
 
 [Authorize(Roles = "Patient")]
-public class PatientDashboardModel : PageModel
+public class PatientModel : PageModel
 {
     private readonly IAppointmentRepository _appointmentService;
     private readonly IDoctorService _doctorService;
@@ -18,7 +18,7 @@ public class PatientDashboardModel : PageModel
     private readonly INotificationService _notificationService;
     private readonly UserManager<ApplicationUser> _userManager;
 
-    public PatientDashboardModel(
+    public PatientModel(
         IAppointmentRepository appointmentService,
         IDoctorService doctorService,
         IPrescriptionService prescriptionService,
@@ -32,43 +32,38 @@ public class PatientDashboardModel : PageModel
         _userManager = userManager;
     }
 
-    // Appointment Lists
+    // Data properties
     public List<Appointment> UpcomingAppointments { get; set; }
     public List<Appointment> PastAppointments { get; set; }
     public List<Prescription> ActivePrescriptions { get; set; }
     public List<Prescription> ExpiredPrescriptions { get; set; }
 
-    // Filter Properties
-    [BindProperty(SupportsGet = true)]
-    public string SearchTerm { get; set; }
+    public List<Doctor> SearchResults { get; set; }
+    public List<SelectListItem> Specializations { get; set; }
+
+    // Filters & bindings
     [BindProperty(SupportsGet = true)]
     public string StatusFilter { get; set; }
     [BindProperty(SupportsGet = true)]
     public DateTime? DateFilter { get; set; }
-
-    // Doctor Search Properties
     [BindProperty]
     public string DoctorSearchTerm { get; set; }
     [BindProperty]
     public string SpecializationFilter { get; set; }
-    public List<Doctor> SearchResults { get; set; }
-    public List<SelectListItem> Specializations { get; set; }
 
-    // New Appointment Booking
-    [BindProperty]
-    public AppointmentInputModel AppointmentInput { get; set; }
-    public List<DateTime> AvailableSlots { get; set; }
+    [BindProperty(SupportsGet = true)]
+    public string SearchTerm { get; set; }
 
-    public class AppointmentInputModel
+    public string GetStatusBadgeClass(string status)
     {
-        [Required]
-        public int DoctorId { get; set; }
-
-        [Required]
-        public DateTime AppointmentDateTime { get; set; }
-
-        [Required]
-        public string Reason { get; set; }
+        return status switch
+        {
+            "Pending" => "badge-warning",
+            "Approved" => "badge-success",
+            "Completed" => "badge-primary",
+            "Cancelled" => "badge-danger",
+            _ => "badge-secondary"
+        };
     }
 
     public async Task OnGetAsync()
@@ -76,46 +71,29 @@ public class PatientDashboardModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         var now = DateTime.Now;
 
-        // Initialize specializations dropdown
+        // Appointments
+        var appointments = _appointmentService.GetPatientAppointments(user.Id);
+
+        if (!string.IsNullOrEmpty(StatusFilter))
+            appointments = appointments.Where(a => a.Status == StatusFilter);
+
+        if (DateFilter.HasValue)
+            appointments = appointments.Where(a => a.AppointmentDateTime.Date == DateFilter.Value.Date);
+
+        var allAppointments = appointments.ToList();
+        UpcomingAppointments = allAppointments.Where(a => a.AppointmentDateTime >= now).OrderBy(a => a.AppointmentDateTime).ToList();
+        PastAppointments = allAppointments.Where(a => a.AppointmentDateTime < now).OrderByDescending(a => a.AppointmentDateTime).ToList();
+
+        // Prescriptions
+        var prescriptions = await _prescriptionService.GetByPatientIdAsync(user.Patient.Id);
+        ActivePrescriptions = prescriptions.Where(p => p.ExpiryDate == null || p.ExpiryDate > now).ToList();
+        ExpiredPrescriptions = prescriptions.Where(p => p.ExpiryDate != null && p.ExpiryDate <= now).ToList();
+
+        // Specializations
         Specializations = (await _doctorService.GetAllDoctorsAsync())
             .Select(d => d.Specialization)
             .Distinct()
             .Select(s => new SelectListItem { Value = s, Text = s })
-            .ToList();
-
-        // Get filtered appointments
-        var appointmentsQuery = _appointmentService.GetPatientAppointments(user.Id);
-
-        if (!string.IsNullOrEmpty(StatusFilter))
-        {
-            appointmentsQuery = appointmentsQuery.Where(a => a.Status == StatusFilter);
-        }
-
-        if (DateFilter.HasValue)
-        {
-            appointmentsQuery = appointmentsQuery.Where(a => a.AppointmentDateTime.Date == DateFilter.Value.Date);
-        }
-
-        var allAppointments = appointmentsQuery.ToList();
-
-        UpcomingAppointments = allAppointments
-            .Where(a => a.AppointmentDateTime >= now)
-            .OrderBy(a => a.AppointmentDateTime)
-            .ToList();
-
-        PastAppointments = allAppointments
-            .Where(a => a.AppointmentDateTime < now)
-            .OrderByDescending(a => a.AppointmentDateTime)
-            .ToList();
-
-        // Get prescriptions
-        var prescriptions = await _prescriptionService.GetByPatientIdAsync(user.Patient.Id);
-        ActivePrescriptions = prescriptions
-            .Where(p => p.ExpiryDate == null || p.ExpiryDate > now)
-            .ToList();
-
-        ExpiredPrescriptions = prescriptions
-            .Where(p => p.ExpiryDate != null && p.ExpiryDate <= now)
             .ToList();
     }
 
@@ -126,75 +104,19 @@ public class PatientDashboardModel : PageModel
         if (!string.IsNullOrEmpty(DoctorSearchTerm))
         {
             doctors = doctors.Where(d =>
-                d.FirstName.Contains(DoctorSearchTerm) ||
-                d.LastName.Contains(DoctorSearchTerm) ||
-                d.Specialization.Contains(DoctorSearchTerm))
-                .ToList();
+                d.FirstName.Contains(DoctorSearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                d.LastName.Contains(DoctorSearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                d.Specialization.Contains(DoctorSearchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         if (!string.IsNullOrEmpty(SpecializationFilter))
         {
-            doctors = doctors.Where(d => d.Specialization == SpecializationFilter)
-                .ToList();
+            doctors = doctors.Where(d => d.Specialization == SpecializationFilter).ToList();
         }
 
         SearchResults = doctors.ToList();
-        await OnGetAsync();
+        await OnGetAsync(); // Refresh appointments and prescriptions
         return Page();
-    }
-
-    public async Task<IActionResult> OnPostGetAvailableSlotsAsync(int doctorId, DateTime date)
-    {
-        var schedules = await _doctorService.GetDoctorScheduleAsync(doctorId);
-        var appointments = await _doctorService.GetDoctorAppointmentsAsync(doctorId, date);
-
-        AvailableSlots = schedules
-            .Where(s => s.DayOfWeek == date.DayOfWeek)
-            .SelectMany(s => GenerateTimeSlots(
-                date.Date.Add(s.StartTime),
-                date.Date.Add(s.EndTime),
-                TimeSpan.FromMinutes(30)))
-            .Where(slot => !appointments.Any(a => a.AppointmentDateTime == slot))
-            .ToList();
-
-        await OnGetAsync(); 
-        return Page();
-    }
-
-    public async Task<IActionResult> OnPostBookAppointmentAsync()
-    {
-        if (!ModelState.IsValid)
-        {
-            await OnGetAsync();
-            return Page();
-        }
-
-        var user = await _userManager.GetUserAsync(User);
-
-        try
-        {
-            var appointment = new Appointment
-            {
-                DoctorId = AppointmentInput.DoctorId,
-                PatientId = user.Patient.Id,
-                AppointmentDateTime = AppointmentInput.AppointmentDateTime,
-                EndDateTime = AppointmentInput.AppointmentDateTime.AddMinutes(30),
-                Status = "Pending",
-                Reason = AppointmentInput.Reason
-            };
-
-            await _appointmentService.AddAsync(appointment);
-            await _notificationService.SendAppointmentConfirmationAsync(appointment);
-
-            TempData["SuccessMessage"] = "Appointment booked successfully!";
-            return RedirectToPage();
-        }
-        catch (Exception ex)
-        {
-            ModelState.AddModelError(string.Empty, ex.Message);
-            await OnGetAsync();
-            return Page();
-        }
     }
 
     public async Task<IActionResult> OnPostCancelAsync(int id, string reason)
@@ -204,13 +126,13 @@ public class PatientDashboardModel : PageModel
 
         if (appointment == null || appointment.PatientId != user.Patient.Id)
         {
-            TempData["ErrorMessage"] = "Appointment not found";
+            TempData["ErrorMessage"] = "Invalid appointment.";
             return RedirectToPage();
         }
 
         if (appointment.AppointmentDateTime < DateTime.Now.AddHours(48))
         {
-            TempData["ErrorMessage"] = "Appointments can only be cancelled at least 48 hours in advance";
+            TempData["ErrorMessage"] = "Appointments can only be canceled 48h in advance.";
             return RedirectToPage();
         }
 
@@ -218,7 +140,7 @@ public class PatientDashboardModel : PageModel
         {
             await _appointmentService.CancelAppointmentAsync(id, reason);
             await _notificationService.SendAppointmentCancellationAsync(appointment);
-            TempData["SuccessMessage"] = "Appointment cancelled successfully";
+            TempData["SuccessMessage"] = "Appointment canceled.";
         }
         catch (Exception ex)
         {
@@ -235,31 +157,20 @@ public class PatientDashboardModel : PageModel
 
         if (prescription == null || prescription.PatientId != user.Patient.Id)
         {
-            TempData["ErrorMessage"] = "Prescription not found";
+            TempData["ErrorMessage"] = "Prescription not found.";
             return RedirectToPage();
         }
 
-        if (prescription.ExpiryDate < DateTime.Now)
+        try
         {
-            TempData["ErrorMessage"] = "This prescription has already expired";
-            return RedirectToPage();
+            await _prescriptionService.RequestRenewalAsync(prescriptionId, user.Id);
+            TempData["SuccessMessage"] = "Renewal request sent.";
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = $"Error: {ex.Message}";
         }
 
-        await _notificationService.CreateNotificationAsync(
-            prescription.Doctor.UserId,
-            $"Patient {user.Patient.FullName} has requested a renewal for prescription {prescription.Medication}",
-            "PrescriptionRenewal",
-            prescription.Id);
-
-        TempData["SuccessMessage"] = "Renewal request sent to your doctor";
         return RedirectToPage();
-    }
-
-    private IEnumerable<DateTime> GenerateTimeSlots(DateTime start, DateTime end, TimeSpan duration)
-    {
-        for (var time = start; time < end; time = time.Add(duration))
-        {
-            yield return time;
-        }
     }
 }
