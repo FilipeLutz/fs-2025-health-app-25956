@@ -9,7 +9,7 @@ public class Appointment
     public DateTime AppointmentDateTime { get; set; }
     public DateTime EndDateTime { get; set; } 
     public int DurationMinutes { get; set; } = 30;
-    public string Status { get; set; } = "Pending"; 
+    public string Status { get; set; }
     public string? Reason { get; set; }
     public string? CancellationReason { get; set; }
     public string? Notes { get; set; }
@@ -24,4 +24,6 @@ public class Appointment
 
     public Prescription? Prescription { get; set; }
     public bool IsDeleted { get; internal set; }
+    [NotMapped]
+    public object Feedback { get; set; }
 }
