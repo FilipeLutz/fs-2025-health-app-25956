@@ -22,7 +22,7 @@ namespace HealthApp.Domain.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("HealthApp.Domain.Entities.ApplicationUser", b =>
+            modelBuilder.Entity("ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -40,6 +40,14 @@ namespace HealthApp.Domain.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -124,17 +132,13 @@ namespace HealthApp.Domain.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AppointmentDateTime");
 
                     b.HasIndex("DoctorId");
 
                     b.HasIndex("PatientId");
-
-                    b.HasIndex("Status");
 
                     b.ToTable("Appointments");
                 });
@@ -183,6 +187,36 @@ namespace HealthApp.Domain.Migrations
                         .IsUnique();
 
                     b.ToTable("Doctors");
+                });
+
+            modelBuilder.Entity("HealthApp.Domain.Entities.Feedback", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AppointmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
+
+                    b.ToTable("Feedbacks");
                 });
 
             modelBuilder.Entity("HealthApp.Domain.Entities.Notification", b =>
@@ -339,6 +373,12 @@ namespace HealthApp.Domain.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int>("RefillsAllowed")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RenewalNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RenewalStatus")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -542,7 +582,7 @@ namespace HealthApp.Domain.Migrations
 
             modelBuilder.Entity("HealthApp.Domain.Entities.Doctor", b =>
                 {
-                    b.HasOne("HealthApp.Domain.Entities.ApplicationUser", "User")
+                    b.HasOne("ApplicationUser", "User")
                         .WithOne("Doctor")
                         .HasForeignKey("HealthApp.Domain.Entities.Doctor", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -551,9 +591,20 @@ namespace HealthApp.Domain.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("HealthApp.Domain.Entities.Feedback", b =>
+                {
+                    b.HasOne("HealthApp.Domain.Entities.Appointment", "Appointment")
+                        .WithOne()
+                        .HasForeignKey("HealthApp.Domain.Entities.Feedback", "AppointmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
+                });
+
             modelBuilder.Entity("HealthApp.Domain.Entities.Patient", b =>
                 {
-                    b.HasOne("HealthApp.Domain.Entities.ApplicationUser", "User")
+                    b.HasOne("ApplicationUser", "User")
                         .WithOne("Patient")
                         .HasForeignKey("HealthApp.Domain.Entities.Patient", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -615,7 +666,7 @@ namespace HealthApp.Domain.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("HealthApp.Domain.Entities.ApplicationUser", null)
+                    b.HasOne("ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -624,7 +675,7 @@ namespace HealthApp.Domain.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("HealthApp.Domain.Entities.ApplicationUser", null)
+                    b.HasOne("ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -639,7 +690,7 @@ namespace HealthApp.Domain.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HealthApp.Domain.Entities.ApplicationUser", null)
+                    b.HasOne("ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -648,14 +699,14 @@ namespace HealthApp.Domain.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("HealthApp.Domain.Entities.ApplicationUser", null)
+                    b.HasOne("ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("HealthApp.Domain.Entities.ApplicationUser", b =>
+            modelBuilder.Entity("ApplicationUser", b =>
                 {
                     b.Navigation("Doctor")
                         .IsRequired();
