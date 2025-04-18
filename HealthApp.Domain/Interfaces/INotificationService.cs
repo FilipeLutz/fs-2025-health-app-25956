@@ -12,11 +12,7 @@ public interface INotificationService
     Task SendAppointmentRejectionAsync(Appointment appointment);
     Task SendAppointmentRescheduleAsync(Appointment appointment);
     Task SendAppointmentCompletionAsync(Appointment appointment);
-
-    // Prescription notifications
     Task SendPrescriptionNotificationAsync(Prescription prescription);
-
-    // General notifications
     Task CreateNotificationAsync(string userId, string message, string notificationType, int? relatedEntityId = null);
     Task MarkAsReadAsync(int notificationId);
     Task<IEnumerable<Notification>> GetUserNotificationsAsync(string userId);
@@ -24,4 +20,5 @@ public interface INotificationService
     Task<IEnumerable<Notification>> GetAllAsync();
     Task BroadcastAsync(string message, string targetRole);
     void SendCancellationNotificationAsync(Appointment appointment, string v);
+    Task SendSystemNotificationAsync(string title, string message);
 }
