@@ -37,8 +37,12 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
         public class InputModel
         {
             [Required]
-            [Display(Name = "Full Name")]
-            public string FullName { get; set; }
+            [Display(Name = "First Name")]
+            public string FirstName { get; set; }
+
+            [Required]
+            [Display(Name = "Last Name")]
+            public string LastName { get; set; }
 
             [Required]
             [EmailAddress]
@@ -77,7 +81,14 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser { UserName = Input.Email, Email = Input.Email };
+                var user = new ApplicationUser
+                {
+                    UserName = Input.Email,
+                    Email = Input.Email,
+                    FirstName = Input.FirstName,
+                    LastName = Input.LastName
+                };
+
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
                 if (result.Succeeded)
@@ -93,15 +104,28 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
                     {
                         _context.Set<Patient>().Add(new Patient
                         {
-                            UserId = user.Id
+                            FirstName = Input.FirstName,
+                            LastName = Input.LastName,
+                            Email = Input.Email,
+                            PhoneNumber = string.Empty,
+                            Address = string.Empty,
+                            UserId = user.Id,
+                            BloodType = "Unknown",
+                            MedicalHistory = string.Empty,
+                            InsuranceInfo = string.Empty,
+                            DateOfBirth = DateTime.UtcNow.AddYears(-20)
                         });
                     }
                     else if (Input.UserType == "Doctor")
                     {
                         _context.Set<Doctor>().Add(new Doctor
                         {
+                            FirstName = Input.FirstName,
+                            LastName = Input.LastName,
+                            Email = Input.Email,
+                            PhoneNumber = string.Empty,
                             UserId = user.Id,
-                            Specialization = Input.Specialization,
+                            Specialization = Input.Specialization ?? "General",
                             LicenseNumber = "TEMP-" + Guid.NewGuid().ToString()[..8]
                         });
                     }
@@ -109,17 +133,11 @@ namespace HealthApp.Razor.Areas.Identity.Pages.Account
                     await _context.SaveChangesAsync();
                     await _signInManager.SignInAsync(user, isPersistent: false);
 
-                    // Redirect to appropriate dashboard based on role
                     if (Input.UserType == "Doctor")
-                    {
-                        return RedirectToPage("/Doctor"); // Redirect to Doctor Dashboard
-                    }
+                        return RedirectToPage("/Doctor");
                     else if (Input.UserType == "Patient")
-                    {
-                        return RedirectToPage("/Patient"); // Redirect to Patient Dashboard
-                    }
+                        return RedirectToPage("/Patient");
 
-                    // Default redirect if no specific role is found
                     return LocalRedirect(returnUrl);
                 }
 
