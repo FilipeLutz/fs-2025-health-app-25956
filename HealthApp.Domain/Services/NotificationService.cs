@@ -5,6 +5,7 @@ using HealthApp.Domain.EventBus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Identity;
 
 namespace HealthApp.Domain.Services;
 
@@ -15,19 +16,22 @@ public class NotificationService : INotificationService
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly ILogger<NotificationService> _logger;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public NotificationService(
         ApplicationDbContext context,
         IEventBus eventBus,
         IEmailService emailService,
         IConfiguration configuration,
-        ILogger<NotificationService> logger)
+        ILogger<NotificationService> logger,
+        UserManager<ApplicationUser> userManager)
     {
         _context = context;
         _eventBus = eventBus;
         _emailService = emailService;
         _configuration = configuration;
         _logger = logger;
+        _userManager = userManager;
     }
 
     public async Task SendAppointmentConfirmationAsync(Appointment appointment)
@@ -68,7 +72,10 @@ public class NotificationService : INotificationService
             throw;
         }
     }
-
+    public async Task SendSystemNotificationAsync(string title, string message)
+    {
+        await Task.CompletedTask;
+    }
 
     public async Task SendAppointmentReminderAsync(Appointment appointment)
     {
@@ -197,18 +204,34 @@ public class NotificationService : INotificationService
         await CreateNotificationAsync(patient.UserId, message, "Prescription", prescription.Id);
     }
 
-    public Task SendAsync(Notification notification)
+    public async Task<IEnumerable<Notification>> GetAllAsync()
     {
-        throw new NotImplementedException();
+        return await _context.Notifications.OrderByDescending(n => n.CreatedAt).ToListAsync();
     }
 
-    public Task<IEnumerable<Notification>> GetAllAsync()
+    public async Task SendAsync(Notification notification)
     {
-        throw new NotImplementedException();
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
     }
 
-    public Task BroadcastAsync(string message, string targetRole)
+    public async Task BroadcastAsync(string message, string targetRole)
     {
-        throw new NotImplementedException();
+        var users = _context.Users.AsQueryable();
+        if (!string.IsNullOrEmpty(targetRole))
+        {
+            users = users.Where(u => _userManager.IsInRoleAsync(u, targetRole).Result);
+        }
+
+        foreach (var user in await users.ToListAsync())
+        {
+            await SendAsync(new Notification
+            {
+                UserId = user.Id,
+                Message = message,
+                NotificationType = "SystemBroadcast",
+                Status = NotificationStatus.Unread
+            });
+        }
     }
 }
