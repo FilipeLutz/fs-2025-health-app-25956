@@ -1,5 +1,5 @@
 ﻿@page
-@model HealthApp.Razor.Pages.PatientDashboardModel
+@model HealthApp.Razor.Pages.PatientModel
 @{
     ViewData["Title"] = "Patient Dashboard";
 }
@@ -10,264 +10,301 @@
     {
         <div class="alert alert-success alert-dismissible fade show">
             @TempData["SuccessMessage"]
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
         </div>
     }
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show">
             @TempData["ErrorMessage"]
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
         </div>
     }
 
     <h1 class="mb-4">@ViewData["Title"]</h1>
 
-    <div class="row">
-        <!-- Doctor Search -->
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Find a Doctor</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" asp-page-handler="SearchDoctors">
-                        <div class="form-group">
-                            <input type="text" class="form-control" asp-for="DoctorSearchTerm" placeholder="Name or specialty">
-                        </div>
-                        <div class="form-group">
-                            <select class="form-control" asp-for="SpecializationFilter" asp-items="Model.Specializations">
-                                <option value="">All Specializations</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Search</button>
-                    </form>
-
-                    @if (Model.SearchResults != null && Model.SearchResults.Any())
-                    {
-                        <div class="mt-3">
-                            <h6>Search Results:</h6>
-                            <ul class="list-group">
-                                @foreach (var doctor in Model.SearchResults)
-                                {
-                                    <li class="list-group-item">
-                                        <strong>@doctor.FullName</strong><br>
-                                        <small>@doctor.Specialization</small>
-                                        <button class="btn btn-sm btn-info float-right"
-                                                data-toggle="modal"
-                                                data-target="#bookModal-@doctor.Id">
-                                            Book
-                                        </button>
-                                    </li>
-                                }
-                            </ul>
-                        </div>
-                    }
-                </div>
-            </div>
+    <!-- Filter Appointments -->
+    <form method="get" class="form-inline card p-3 mb-4">
+        <div class="form-group mr-3">
+            <input type="text" class="form-control" asp-for="SearchTerm" placeholder="Search appointments by patient name" />
         </div>
+        <div class="form-group mr-3">
+            <select class="form-control" asp-for="StatusFilter">
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+            </select>
+        </div>
+        <div class="form-group mr-3">
+            <input type="date" class="form-control" asp-for="DateFilter" />
+        </div>
+        <button type="submit" class="btn btn-primary mr-2">Filter</button>
+        <a asp-page="./PatientDashboard" class="btn btn-secondary">Reset</a>
+    </form>
 
-        <!-- Main Content -->
-        <div class="col-md-8">
-            <!-- Upcoming Appointments -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5>Upcoming Appointments</h5>
-                </div>
-                <div class="card-body">
-                    @if (Model.UpcomingAppointments.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Time</th>
-                                        <th>Doctor</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var appointment in Model.UpcomingAppointments)
-                                    {
-                                        <tr>
-                                            <td>@appointment.AppointmentDateTime.ToString("MMM d, yyyy")</td>
-                                            <td>@appointment.AppointmentDateTime.ToString("h:mm tt")</td>
-                                            <td>Dr. @appointment.Doctor.FullName</td>
-                                            <td>
-                                                <span class="badge @(appointment.Status == "Approved" ? "badge-success" : "badge-warning")">
-                                                    @appointment.Status
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info" data-toggle="modal"
-                                                        data-target="#detailsModal-@appointment.Id">
-                                                    Details
-                                                </button>
-                                                <button class="btn btn-sm btn-danger" data-toggle="modal"
-                                                        data-target="#cancelModal-@appointment.Id">
-                                                    Cancel
-                                                </button>
-                                            </td>
-                                        </tr>
+    <!-- Upcoming Appointments -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5>Upcoming Appointments</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.UpcomingAppointments.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Doctor</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var appointment in Model.UpcomingAppointments)
+                            {
+                                <tr>
+                                    <td>@appointment.AppointmentDateTime.ToString("MMM d, yyyy")</td>
+                                    <td>@appointment.AppointmentDateTime.ToString("h:mm tt")</td>
+                                    <td>Dr. @appointment.Doctor.FullName</td>
+                                    <td>
+                                        <span class="badge @GetStatusBadgeClass(appointment.Status)">
+                                            @appointment.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" data-toggle="modal" data-target="#appointmentDetailsModal-@appointment.Id">
+                                            Details
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" data-toggle="modal" data-target="#cancelAppointmentModal-@appointment.Id">
+                                            Cancel
+                                        </button>
+                                    </td>
+                                </tr>
 
-                                        <!-- Details Modal -->
-                                        <div class="modal fade" id="detailsModal-@appointment.Id" tabindex="-1" role="dialog">
-                                            <div class="modal-dialog" role="document">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Appointment Details</h5>
-                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                            <span aria-hidden="true">&times;</span>
-                                                        </button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <p><strong>Doctor:</strong> Dr. @appointment.Doctor.FullName</p>
-                                                        <p><strong>Date:</strong> @appointment.AppointmentDateTime.ToString("f")</p>
-                                                        <p><strong>Duration:</strong> 30 minutes</p>
-                                                        <p><strong>Reason:</strong> @appointment.Reason</p>
-                                                        <p><strong>Status:</strong> @appointment.Status</p>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                                    </div>
-                                                </div>
+                                <!-- Appointment Details Modal -->
+                                <div class="modal fade" id="appointmentDetailsModal-@appointment.Id" tabindex="-1" role="dialog">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Appointment Details</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p><strong>Doctor:</strong> Dr. @appointment.Doctor.FullName</p>
+                                                <p><strong>Date:</strong> @appointment.AppointmentDateTime.ToString("f")</p>
+                                                <p><strong>Reason:</strong> @appointment.Reason</p>
+                                                <p><strong>Status:</strong> @appointment.Status</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
 
-                                        <!-- Cancel Modal -->
-                                        <div class="modal fade" id="cancelModal-@appointment.Id" tabindex="-1" role="dialog">
-                                            <div class="modal-dialog" role="document">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Cancel Appointment</h5>
-                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                            <span aria-hidden="true">&times;</span>
-                                                        </button>
-                                                    </div>
-                                                    <form method="post" asp-page-handler="Cancel" asp-route-id="@appointment.Id">
-                                                        <div class="modal-body">
-                                                            <p>Are you sure you want to cancel this appointment?</p>
-                                                            <div class="form-group">
-                                                                <label>Reason for cancellation</label>
-                                                                <textarea name="reason" class="form-control" required></textarea>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                                            <button type="submit" class="btn btn-danger">Cancel Appointment</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <p>No upcoming appointments.</p>
-                    }
-                </div>
-            </div>
-
-            <!-- Active Prescriptions -->
-            <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                    <h5>Active Prescriptions</h5>
-                </div>
-                <div class="card-body">
-                    @if (Model.ActivePrescriptions.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Medication</th>
-                                        <th>Dosage</th>
-                                        <th>Instructions</th>
-                                        <th>Prescribed</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var prescription in Model.ActivePrescriptions)
-                                    {
-                                        <tr>
-                                            <td>@prescription.Medication</td>
-                                            <td>@prescription.Dosage</td>
-                                            <td>@prescription.Instructions</td>
-                                            <td>@prescription.PrescribedDate.ToString("d")</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info" data-toggle="modal"
-                                                        data-target="#prescriptionModal-@prescription.Id">
-                                                    View
+                                <!-- Cancel Appointment Modal -->
+                                <div class="modal fade" id="cancelAppointmentModal-@appointment.Id" tabindex="-1" role="dialog">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Cancel Appointment</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
                                                 </button>
-                                                <form method="post" asp-page-handler="RequestRenewal"
-                                                      asp-route-prescriptionId="@prescription.Id" class="d-inline">
-                                                    <button type="submit" class="btn btn-sm btn-warning">
-                                                        Request Renewal
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-
-                                        <!-- Prescription Details Modal -->
-                                        <div class="modal fade" id="prescriptionModal-@prescription.Id" tabindex="-1" role="dialog">
-                                            <div class="modal-dialog" role="document">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Prescription Details</h5>
-                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                            <span aria-hidden="true">&times;</span>
-                                                        </button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <p><strong>Medication:</strong> @prescription.Medication</p>
-                                                        <p><strong>Dosage:</strong> @prescription.Dosage</p>
-                                                        <p><strong>Frequency:</strong> @prescription.Frequency</p>
-                                                        <p><strong>Duration:</strong> @prescription.DurationDays days</p>
-                                                        <p><strong>Instructions:</strong> @prescription.Instructions</p>
-                                                        <p><strong>Prescribed by:</strong> Dr. @prescription.Doctor.FullName</p>
-                                                        <p><strong>Date:</strong> @prescription.PrescribedDate.ToString("f")</p>
-                                                        @if (prescription.ExpiryDate.HasValue)
-                                                        {
-                                                            <p><strong>Expires:</strong> @prescription.ExpiryDate.Value.ToString("d")</p>
-                                                        }
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                                        <button class="btn btn-primary" onclick="window.print()">Print</button>
+                                            </div>
+                                            <form method="post" asp-page-handler="Cancel" asp-route-id="@appointment.Id">
+                                                <div class="modal-body">
+                                                    <div class="form-group">
+                                                        <label>Reason for cancellation</label>
+                                                        <textarea name="reason" class="form-control" required></textarea>
                                                     </div>
                                                 </div>
-                                            </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                    <button type="submit" class="btn btn-danger">Cancel Appointment</button>
+                                                </div>
+                                            </form>
                                         </div>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <p>No active prescriptions.</p>
-                    }
+                                    </div>
+                                </div>
+                            }
+                        </tbody>
+                    </table>
                 </div>
-            </div>
+            }
+            else
+            {
+                <p>No upcoming appointments.</p>
+            }
         </div>
     </div>
+
+    <!-- Past Appointments -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5>Past Appointments</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.PastAppointments.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Doctor</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var appointment in Model.PastAppointments)
+                            {
+                                <tr>
+                                    <td>@appointment.AppointmentDateTime.ToString("MMM d, yyyy")</td>
+                                    <td>@appointment.AppointmentDateTime.ToString("h:mm tt")</td>
+                                    <td>Dr. @appointment.Doctor.FullName</td>
+                                    <td>
+                                        <span class="badge @GetStatusBadgeClass(appointment.Status)">
+                                            @appointment.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" data-toggle="modal" data-target="#appointmentDetailsModal-@appointment.Id">
+                                            Details
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Appointment Details Modal -->
+                                <div class="modal fade" id="appointmentDetailsModal-@appointment.Id" tabindex="-1" role="dialog">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Appointment Details</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p><strong>Doctor:</strong> Dr. @appointment.Doctor.FullName</p>
+                                                <p><strong>Date:</strong> @appointment.AppointmentDateTime.ToString("f")</p>
+                                                <p><strong>Reason:</strong> @appointment.Reason</p>
+                                                <p><strong>Status:</strong> @appointment.Status</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p>No past appointments.</p>
+            }
+        </div>
+    </div>
+
+    <!-- Prescription Management -->
+    <div class="card mt-4">
+        <div class="card-header"><h5>Your Prescriptions</h5></div>
+        <div class="card-body">
+            @if (Model.ActivePrescriptions.Any())
+            {
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Medication</th>
+                            <th>Dosage</th>
+                            <th>Instructions</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var prescription in Model.ActivePrescriptions)
+                        {
+                            <tr>
+                                <td>@prescription.Medication</td>
+                                <td>@prescription.Dosage</td>
+                                <td>@prescription.Instructions</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" data-toggle="modal" data-target="#prescriptionDetailsModal-@prescription.Id">Details</button>
+                                    <form method="post" asp-page-handler="RequestRenewal" asp-route-prescriptionId="@prescription.Id" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-warning">Request Renewal</button>
+                                    </form>
+                                </td>
+                            </tr>
+
+                            <!-- Prescription Details Modal -->
+                            <div class="modal fade" id="prescriptionDetailsModal-@prescription.Id" tabindex="-1" role="dialog">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Prescription Details</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p><strong>Medication:</strong> @prescription.Medication</p>
+                                            <p><strong>Dosage:</strong> @prescription.Dosage</p>
+                                            <p><strong>Instructions:</strong> @prescription.Instructions</p>
+                                            <p><strong>Prescribed Date:</strong> @prescription.PrescribedDate.ToString("f")</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p>No active prescriptions.</p>
+            }
+        </div>
+    </div>
+
 </div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        switch (status)
+        {
+            case "Pending":
+                return "badge-warning";
+            case "Approved":
+                return "badge-primary";
+            case "Completed":
+                return "badge-success";
+            case "Cancelled":
+                return "badge-danger";
+            default:
+                return "badge-secondary";
+        }
+    }
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Auto-dismiss alerts after 5 seconds
+        // Auto-dismiss alerts
         window.setTimeout(function() {
             $(".alert").fadeTo(500, 0).slideUp(500, function(){
                 $(this).remove();
