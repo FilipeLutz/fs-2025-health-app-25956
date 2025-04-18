@@ -1,11 +1,15 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using HealthApp.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 
-namespace HealthApp.Domain.Entities
+public class ApplicationUser : IdentityUser
 {
-    public class ApplicationUser : IdentityUser
-    {
-        public Patient Patient { get; set; }
-        public Doctor Doctor { get; set; }
-    }
+    [Required, PersonalData]
+    public string FirstName { get; set; }
+
+    [Required, PersonalData]
+    public string LastName { get; set; }
+
+    public Patient Patient { get; set; }
+    public Doctor Doctor { get; set; }
 }
