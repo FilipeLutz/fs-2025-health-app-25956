@@ -22,4 +22,5 @@ public interface IAppointmentRepository
     Task<bool> CancelAppointmentAsync(int appointmentId, string reason);
     IEnumerable<object> GetDoctorAppointments(int id);
     Task<IEnumerable<Appointment>> GetRecentAsync(int count);
+    Task<List<Appointment>> GetAllAppointmentsAsync();
 }
