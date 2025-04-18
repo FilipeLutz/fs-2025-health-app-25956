@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
-using HealthApp.Domain.Entities;
+﻿using HealthApp.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthApp.Domain.Services
 {
@@ -9,9 +9,7 @@ namespace HealthApp.Domain.Services
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
+            : base(options) { }
 
         public DbSet<Patient> Patients { get; set; }
         public DbSet<Doctor> Doctors { get; set; }
@@ -19,15 +17,21 @@ namespace HealthApp.Domain.Services
         public DbSet<Schedule> Schedules { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Prescription> Prescriptions { get; set; }
+        public DbSet<Feedback> Feedbacks { get; set; }
+        public object Feedback { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // Configure soft delete for all entities that need it
+            builder.Entity<ApplicationUser>()
+                .Property(x => x.FirstName).IsRequired();
+
+            builder.Entity<ApplicationUser>()
+                .Property(x => x.LastName).IsRequired();
+
             builder.Entity<Appointment>().HasQueryFilter(a => !a.IsDeleted);
 
-            // Appointment relationships
             builder.Entity<Appointment>()
                 .HasOne(a => a.Patient)
                 .WithMany(p => p.Appointments)
@@ -40,13 +44,11 @@ namespace HealthApp.Domain.Services
                 .HasForeignKey(a => a.DoctorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Schedule
             builder.Entity<Schedule>()
                 .HasOne(s => s.Doctor)
                 .WithMany(d => d.Schedules)
                 .HasForeignKey(s => s.DoctorId);
 
-            // Prescription
             builder.Entity<Prescription>()
                 .HasOne(p => p.Appointment)
                 .WithOne(a => a.Prescription)
@@ -59,13 +61,6 @@ namespace HealthApp.Domain.Services
                 .HasForeignKey(p => p.DoctorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Indexes
-            builder.Entity<Appointment>()
-                .HasIndex(a => a.AppointmentDateTime);
-
-            builder.Entity<Appointment>()
-                .HasIndex(a => a.Status);
-
             builder.Entity<Doctor>()
                 .HasIndex(d => d.UserId)
                 .IsUnique();
@@ -74,13 +69,17 @@ namespace HealthApp.Domain.Services
                 .HasIndex(p => p.UserId)
                 .IsUnique();
 
-            // Notification configuration
             builder.Entity<Notification>()
                 .Property(n => n.Status)
                 .HasConversion<string>();
 
             builder.Entity<Notification>()
                 .HasIndex(n => new { n.UserId, n.Status });
+
+            builder.Entity<Feedback>()
+                .HasOne(f => f.Appointment)
+                .WithOne()
+                .HasForeignKey<Feedback>(f => f.AppointmentId);
         }
 
         public override int SaveChanges()
