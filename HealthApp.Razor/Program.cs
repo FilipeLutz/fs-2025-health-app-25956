@@ -16,7 +16,7 @@ builder.Services.AddSingleton<IEventBus>(provider =>
 });
 
 // Email service
-builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddTransient<IEmailService, EmailService>(); 
 
 // Register application services
 builder.Services.AddScoped<IAppointmentRepository, AppointmentService>();
@@ -24,7 +24,6 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
 
 try
 {
@@ -91,7 +90,7 @@ try
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
             context.Database.Migrate();
-            await SeedData.Initialize(services);
+            await SeedData.Initialize(services); 
         }
         catch (Exception ex)
         {
@@ -107,7 +106,6 @@ try
     app.UseAuthorization();
     app.MapRazorPages();
     app.Run();
-
 }
 catch (Exception ex)
 {
