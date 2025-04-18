@@ -37,6 +37,13 @@ public class AppointmentService : IAppointmentRepository
             })
             .AsEnumerable();
     }
+    public async Task<List<Appointment>> GetAllAppointmentsAsync()
+    {
+        return await _context.Appointments
+            .Include(a => a.Patient)
+            .Include(a => a.Doctor)
+            .ToListAsync();
+    }
 
     public async Task<Appointment> CreateAppointmentAsync(AppointmentCreateDto dto)
     {
@@ -206,8 +213,13 @@ public class AppointmentService : IAppointmentRepository
             .AsQueryable();
     }
 
-    public Task<IEnumerable<Appointment>> GetRecentAsync(int count)
+    public async Task<IEnumerable<Appointment>> GetRecentAsync(int count)
     {
-        throw new NotImplementedException();
+        return await _context.Appointments
+            .Include(a => a.Patient)
+            .Include(a => a.Doctor)
+            .OrderByDescending(a => a.AppointmentDateTime)
+            .Take(count)
+            .ToListAsync();
     }
 }
